@@ -12,10 +12,10 @@ import warnings
 warnings.simplefilter(action='ignore')
 
 def main():
-    with open(r'C:\Users\Gustavo\Documents\Mestrado\artigos\K-ISOMAP\second_set_experiments.json', 'r') as file:
+    # Choose .json results
+    with open(r'C:\Users\Gustavo\Documents\Mestrado\artigos\K-ISOMAP\first_set_experiments.json', 'r') as file:
         results = json.load(file)
 
-    # Suponha que 'results' já seja o JSON carregado
     rows = []
 
     for dataset_name, methods in results.items():
@@ -30,14 +30,15 @@ def main():
 
     metrics = ["RI", "CH", "FM", "VS", "SS", "DB"]
 
-    methods = ['KISOMAP', 'ISOMAP', 'KPCA','LLE','SE','TSNE','UMAP']
+    methods = ['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']
 
     # Retirando resultados normalizados, pegando apenas os valores brutos
     mask = ~df['Dataset'].str.contains('_norm')
-    mask_norm = df['Dataset'].str.contains('norm')
+    #mask_norm = df['Dataset'].str.contains('norm')
 
     # Dataset with actual values
     df_filtered = df[mask]
+
     df = df_filtered
 
     statistics = []
@@ -83,7 +84,7 @@ def main():
     ###### Exportar tabela em latex
     latex_code = results_df[['Method','Metric','P-Value Friedman','P-Value Nemenyi','Test Friedman','Test Nemenyi']].sort_values(['Method','Metric']).to_latex(index=False)
 
-    with open("2nd_battery_results.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)
 
     df_melted = pd.melt(df_filtered, id_vars=['Dataset', 'Method'], 
@@ -109,38 +110,38 @@ def main():
     df_gmm_ri = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='RI')
     df_gmm_ri.reset_index(inplace=True) 
     latex_code = df_gmm_ri.round(3).to_latex(index=False)
-    with open("2nd_battery_results_RI.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_RI.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)
 
     df_gmm_ch = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='CH')
     df_gmm_ch.reset_index(inplace=True)  
     latex_code = df_gmm_ch.round(3).to_latex(index=False)
-    with open("2nd_battery_results_CH.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_CH.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)
 
     df_gmm_fm = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='FM')
     df_gmm_fm.reset_index(inplace=True)
     latex_code = df_gmm_fm.round(3).to_latex(index=False)
-    with open("2nd_battery_results_FM.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_FM.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)  
 
     df_gmm_vs = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='VS')
     df_gmm_vs.reset_index(inplace=True)
     latex_code = df_gmm_vs.round(3).to_latex(index=False)
-    with open("2nd_battery_results_VS.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_VS.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)  
 
     df_gmm_ss = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='SS')
     df_gmm_ss.reset_index(inplace=True)  
     latex_code = df_gmm_ss.round(3).to_latex(index=False)
-    with open("2nd_battery_results_SS.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_SS.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)
 
 
     df_gmm_db = df_pivot[['ISOMAP','KISOMAP','KPCA','LLE','SE','TSNE','UMAP']].filter(like='DB')
     df_gmm_db.reset_index(inplace=True)  
     latex_code = df_gmm_db.round(3).to_latex(index=False)
-    with open("2nd_battery_results_DB.txt", "w", encoding="utf-8") as file:
+    with open("1st_battery_results_DB.txt", "w", encoding="utf-8") as file:
         file.write(latex_code)
 
     results_data = {
@@ -191,23 +192,33 @@ def main():
     # Criando subplots para as métricas
     fig, axes = plt.subplots(2, 3, figsize=(20, 10), constrained_layout=True)
 
+    # Definindo as cores para os métodos KISOMAP e ISOMAP
+    method_colors = {
+    "ISOMAP": "#F8B717",   # Laranja
+    "KISOMAP": "#4A9FFF"  # Azul
+    }
+
     # Iterando sobre as métricas e eixos para criar os gráficos
     for ax, metric in zip(axes.flat, metrics):
+        data = results_data[metric]
+        # Criando o boxplot com patch_artist=True para permitir coloração
+        box = ax.boxplot(data, labels=methods, patch_artist=True)
+
+        # Colorindo apenas os métodos KISOMAP e ISOMAP
+        for patch, label in zip(box['boxes'], methods):
+            if label in method_colors:
+                patch.set_facecolor(method_colors[label])  # Define a cor do método
+            else:
+                patch.set_facecolor("white")  # Outros métodos sem cor
+
+        # Configurações do gráfico
+        ax.set_ylabel(metric)
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
         if metric == 'CH':
-            data = results_data[metric]
-            ax.boxplot(data, labels=methods)
-            ax.set_ylabel(metric)
-            ax.grid(axis='y', linestyle='--', alpha=0.7)
             ax.set_ylim(-100, 5000)  # Ajuste para o intervalo desejado
-        else:
-            data = results_data[metric]
-            ax.boxplot(data, labels=methods)
-            ax.set_ylabel(metric)
-            ax.grid(axis='y', linestyle='--', alpha=0.7)        
 
-
-    # Exibindo os gráficos
-    plt.savefig('2nd_battery_boxplots.jpeg',format='jpeg',dpi=300)
+    # Salvando os gráficos
+    plt.savefig('1st_battery_boxplots.jpeg', format='jpeg', dpi=300)
     plt.close()
 
 
@@ -222,7 +233,6 @@ def main():
     for idx, metric in enumerate(metrics):
         # Sort dataframe to put KISOMAP last for this metric
         df_sorted = df.copy()
-        print(df_sorted.head())
         df_sorted['plot_order'] = df_sorted['Method'].map(lambda x: 2 if x == 'KISOMAP' else 1 if x == 'ISOMAP' else 0)
         df_sorted = df_sorted.sort_values('plot_order')
 
@@ -241,13 +251,16 @@ def main():
             axes_flat[idx].set_ylim(-100,5000)
         axes_flat[idx].set_title(f'{metric} Metric')
         axes_flat[idx].tick_params(axis='x', rotation=45, labelbottom=False)
-            # Move legend outside of plot
-        axes_flat[idx].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        axes_flat[idx].get_legend().remove()
+        # Move legend outside of plot
+        
+        if idx == 2:
+            axes_flat[idx].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        else:
+            axes_flat[idx].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            axes_flat[idx].get_legend().remove()
 
 
-    # Adjust layout to prevent overlapping
-    plt.savefig('2nd_battery_lineplots.jpeg',format='jpeg',dpi=300)
+    plt.savefig('1st_battery_lineplots.jpeg',format='jpeg',dpi=300)
     plt.close()
 
 if __name__ == '__main__':
